@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "File title:"
+read file_title
+date=`date +%Y-%m-%d`
+
+post_file="_posts/${date}-${file_title}.markdown"
+echo '---
+layout: post
+title: ""
+categories:
+---' > $post_file
+
+$EDITOR $post_file
