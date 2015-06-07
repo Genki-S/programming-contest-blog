@@ -7,7 +7,7 @@ categories: topcoder srm
 
 # Algorithm
 
-Brute force
+Greedy
 
 # Explanation
 
