@@ -6,7 +6,6 @@ date=`date +%Y-%m-%d`
 
 post_file="_posts/${date}-${file_title}.markdown"
 echo '---
-layout: post
 title: ""
 categories:
 ---' > $post_file

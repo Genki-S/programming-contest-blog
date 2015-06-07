@@ -11,3 +11,12 @@ github_username:  Genki-S
 
 # Build settings
 markdown: kramdown
+highlighter: pygments
+
+defaults:
+  -
+    scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
