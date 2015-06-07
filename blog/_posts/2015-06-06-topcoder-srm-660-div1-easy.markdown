@@ -105,7 +105,7 @@ class Coversta {
 };
 {% endhighlight %}
 
-Full runnable code with test cases [here](https://github.com/Genki-S/programming-contest-blog/code/topcoder/srm/660/div1/Coversta.cpp).
+Full runnable code with test cases [here](https://github.com/Genki-S/programming-contest-blog/blob/master/code/topcoder/srm/660/div1/Coversta.cpp).
 
 # Credit
 
