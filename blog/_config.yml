@@ -17,11 +17,14 @@ defaults:
   -
     scope:
       path: ""
-      type: "posts"
+      type: "post"
     values:
       layout: "post"
+      comments: true
+  -
     scope:
       path: ""
       type: "pages"
     values:
       layout: "page"
+      comments: true
