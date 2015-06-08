@@ -1,5 +1,5 @@
 ---
-title: "TopCoder SRM 660 Div1 Easy"
+title: "TopCoder SRM 660 Div1 Easy: Coversta"
 categories: topcoder srm
 ---
 
