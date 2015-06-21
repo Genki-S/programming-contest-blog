@@ -1,0 +1,8 @@
+aoj/*/.config.yml
+aoj/*/Makefile
+aoj/*/description.md
+aoj/*/inputs/*
+aoj/*/outputs/*
+aoj/*/my_outputs/*
+aoj/*/a.out
+aoj/*/main.o
