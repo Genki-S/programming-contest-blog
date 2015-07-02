@@ -49,7 +49,7 @@ typedef vector<VC> VVC;
 typedef vector<string> VS;
 typedef vector<VS> VVS;
 typedef pair<int, int> PII;
-typedef complex<int> P;
+typedef complex<char> P;
 #define PQ(type) priority_queue<type>
 // priority queue reverse
 #define PQR(type) priority_queue< type, vector<type>, greater<type> >
@@ -179,7 +179,42 @@ inline void output(string filename) {
 // }}}
 // }}}
 
+int W, H;
 bool opt_debug = false;
+typedef pair<P, P> PPP;
+P dydx_l[4] = { P(-1, 0), P(0, 1), P(1, 0), P(0, -1) };
+P dydx_r[4] = { P(-1, 0), P(0, -1), P(1, 0), P(0, 1) };
+typedef pair< pair<char, char>, pair<char, char> > PPIIPII;
+map< PPIIPII, bool > memo;
+
+bool dfs(VVC &room_l, VVC &room_r, P len, P rin) {
+	PPIIPII key = MP( MP(len.Y, len.X), MP(rin.Y, rin.X) );
+	if (EXIST(memo, key)) { return memo[key]; }
+	memo[key] = false; // HACK: avoid loop
+
+	bool ok = false;
+	if (room_l[len.Y][len.X] == '%' && room_r[rin.Y][rin.X] == '%') {
+		return memo[key] = true;
+	}
+	if (room_l[len.Y][len.X] == '%' || room_r[rin.Y][rin.X] == '%') {
+		return memo[key] = false;
+	}
+	REP (d, 4) {
+		P n_len = len + dydx_l[d];
+		P n_rin = rin + dydx_r[d];
+		if (!in_field(H, W, n_len) || room_l[n_len.Y][n_len.X] == '#') {
+			n_len -= dydx_l[d];
+		}
+		if (!in_field(H, W, n_rin) || room_r[n_rin.Y][n_rin.X] == '#') {
+			n_rin -= dydx_r[d];
+		}
+		ok = ok || dfs(room_l, room_r, n_len, n_rin);
+		if (ok) {
+			break;
+		}
+	}
+	return memo[key] = ok;
+}
 
 int main(int argc, char** argv) {
 	std::ios_base::sync_with_stdio(false);
@@ -200,8 +235,8 @@ int main(int argc, char** argv) {
 	// input("./inputs/0.txt");
 	// output("./outputs/0.txt");
 
-	int W, H;
 	while (cin >> W >> H, W | H) {
+		memo.clear();
 		VVC room_l(H, VC(W));
 		VVC room_r(H, VC(W));
 		P len, rin;
@@ -222,40 +257,7 @@ int main(int argc, char** argv) {
 			}
 		}
 
-		typedef pair<P, P> PPP;
-		queue<PPP> q;
-		q.push(MP(len, rin));
-		P dydx_l[4] = { P(-1, 0), P(0, 1), P(1, 0), P(0, -1) };
-		P dydx_r[4] = { P(-1, 0), P(0, -1), P(1, 0), P(0, 1) };
-		typedef pair< pair<int, int>, pair<int, int> > PPIIPII;
-		set< PPIIPII > visited;
-		bool ok = false;
-		while (!q.empty()) {
-			PPP t = q.front(); q.pop();
-			PPIIPII key = MP( MP(t.F.Y, t.F.X), MP(t.S.Y, t.S.X) );
-			if (EXIST(visited, key)) { continue; }
-			visited.insert(key);
-			len = t.F; rin = t.S;
-			if (room_l[len.Y][len.X] == '%' && room_r[rin.Y][rin.X] == '%') {
-				ok = true;
-				break;
-			}
-			if (room_l[len.Y][len.X] == '%' || room_r[rin.Y][rin.X] == '%') {
-				continue;
-			}
-			REP (d, 4) {
-				P n_len = len + dydx_l[d];
-				P n_rin = rin + dydx_r[d];
-				if (!in_field(H, W, n_len) || room_l[n_len.Y][n_len.X] == '#') {
-					n_len -= dydx_l[d];
-				}
-				if (!in_field(H, W, n_rin) || room_r[n_rin.Y][n_rin.X] == '#') {
-					n_rin -= dydx_r[d];
-				}
-				q.push(MP(n_len, n_rin));
-			}
-		}
-
+		bool ok = dfs(room_l, room_r, len, rin);
 		if (ok) {
 			cout << "Yes" << endl;
 		} else {
