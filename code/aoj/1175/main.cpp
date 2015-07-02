@@ -112,6 +112,7 @@ inline int MAKE_MASK(ULL upper, ULL lower) { assert(lower < 64 && upper < 64 && 
 #define dumpf() if (opt_debug) { cerr << __PRETTY_FUNCTION__ << endl; }
 #define where() if (opt_debug) { cerr << __FILE__ << ": " << __PRETTY_FUNCTION__ << " [L: " << __LINE__ << "]" << endl; }
 #define show_bits(b, s) if(opt_debug) { REP(i, s) { cerr << BITOF(b, s-1-i); if(i%4 == 3) cerr << ' '; } cerr << endl; }
+#define dumpb(bit, digits) if (opt_debug) { cerr << " [L" << __LINE__ << "] " << #bit << " = "; for(int __i = digits - 1; __i >= 0; __i--) { cerr << static_cast<bool>(bit & (1 << __i)); if (__i % 4 == 0) { cerr << " "; } } cerr << endl; }
 
 // ostreams {{{
 // complex
@@ -200,59 +201,36 @@ std::ostream& operator<<(std::ostream &s, const Disk &d) {
 	return s;
 }
 
-map< vector<Disk*>, int > memo;
-int solve(vector<Disk*> forest) {
-	if (forest.empty()) { return 0; }
-	if (EXIST(memo, forest)) {
-		return memo[forest];
-	}
+#define BIT_SUB(a, b) ((a) - ((a) & (b)))
+typedef vector<unsigned> Vunsigned;
 
-	dprt("Forest:\n");
-	REP (i, forest.size()) {
-		dump(*forest[i]);
-	}
-
+map<unsigned, char> memo;
+int solve(vector<Disk*> &disks, Vunsigned &upper, unsigned current) {
+	dumpb(current, 24);
+	if (EXIST(memo, current)) { return memo[current]; }
 	int ret = 0;
-	REP (i, forest.size()) {
-		FOR (j, i+1, forest.size()) {
-			if (forest[i]->c != forest[j]->c) { continue; }
-			dump(*forest[i]);
-			dump(*forest[j]);
-
-			Disk *a = forest[i], *b = forest[j];
-			vector<Disk*> new_forest = forest;
-			new_forest.erase(find(ALL(new_forest), a));
-			new_forest.erase(find(ALL(new_forest), b));
-
-			EACH (a->lower_disks, itr) {
-				Disk *d = *itr;
-				d->upper_disks.erase(a);
-				if (d->upper_disks.empty()) {
-					new_forest.PB(d);
-				}
+	REP (i, disks.size()) {
+		FOR (j, i+1, disks.size()) {
+			if (current & 1 << i || current & 1 << j || (disks[i]->c != disks[j]->c)) { continue; }
+			dumpb(upper[i], 24);
+			dumpb(upper[j], 24);
+			dumpb(BIT_SUB(upper[i], current), 24);
+			dumpb(BIT_SUB(upper[j], current), 24);
+			if (BIT_SUB(upper[i], current) || BIT_SUB(upper[j], current)) {
+				// cannot remove
+				continue;
 			}
-			EACH (b->lower_disks, itr) {
-				Disk *d = *itr;
-				d->upper_disks.erase(b);
-				if (d->upper_disks.empty()) {
-					new_forest.PB(d);
-				}
-			}
+			dump(i);
+			dump(j);
+			dump(*disks[i]);
+			dump(*disks[j]);
 
-			ret = max(ret, solve(new_forest) + 2);
-
-			EACH (a->lower_disks, itr) {
-				Disk *d = *itr;
-				d->upper_disks.insert(a);
-			}
-			EACH (b->lower_disks, itr) {
-				Disk *d = *itr;
-				d->upper_disks.insert(b);
-			}
+			unsigned next = current | (1 << i) | (1 << j);
+			dumpb(next, 24);
+			ret = max(ret, 2 + solve(disks, upper, next));
 		}
 	}
-
-	return memo[forest] = ret;
+	return memo[current] = ret;
 }
 
 int main(int argc, char** argv) {
@@ -277,30 +255,20 @@ int main(int argc, char** argv) {
 	int n;
 	while (cin >> n, n) {
 		memo.clear();
+		Vunsigned overlap(n, 0);
 		vector<Disk*> disks;
 		REP (i, n) {
 			int x, y, r, c; cin >> x >> y >> r >> c;
 			Disk *d = new Disk(x, y, r, c);
-			EACH (disks, itr) {
-				Disk *rhs = *itr;
+			REP (j, disks.size()) {
+				Disk *rhs = disks[j];
 				if (d->overlap(*rhs)) {
-					rhs->lower_disks.insert(d);
-					d->upper_disks.insert(rhs);
+					overlap[i] = overlap[i] | (1 << j);
 				}
 			}
 			disks.PB(d);
 		}
-
-		vector<Disk*> forest;
-		EACH (disks, itr) {
-			Disk *d = *itr;
-			if (d->upper_disks.empty()) {
-				forest.PB(d);
-			}
-		}
-
-		cout << solve(forest) << endl;
-
+		cout << (int)solve(disks, overlap, 0) << endl;
 	}
 
 	return 0;
