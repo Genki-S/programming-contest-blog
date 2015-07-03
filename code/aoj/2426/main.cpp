@@ -183,7 +183,7 @@ bool opt_debug = false;
 
 // xs: unique sorted vector of points
 int compressed_index(VI xs, int x) {
-	return lower_bound(ALL(xs), x) - xs.begin();
+	return upper_bound(ALL(xs), x) - xs.begin() - 1;
 }
 
 int main(int argc, char** argv) {
@@ -202,7 +202,7 @@ int main(int argc, char** argv) {
 	// }}}
 
 	opt_debug = true;
-	input("./inputs/0.txt");
+	input("./inputs/1.txt");
 	// output("./outputs/0.txt");
 
 	int n, m; cin >> n >> m;
@@ -215,6 +215,9 @@ int main(int argc, char** argv) {
 		points.PB(P(y, x));
 	}
 
+	xs.PB(-1e9 - 1);
+	ys.PB(-1e9 - 1);
+
 	SORT(xs);
 	SORT(ys);
 #define UNIQ(v) ((v).erase(unique((v).begin(), (v).end()), (v).end()))
@@ -224,8 +227,8 @@ int main(int argc, char** argv) {
 	dump(ys);
 	dump(xs);
 
-	int max_y = compressed_index(ys, 1e9+1) + 1;
-	int max_x = compressed_index(xs, 1e9+1) + 1;
+	int max_y = compressed_index(ys, 1e9+1) + 2;
+	int max_x = compressed_index(xs, 1e9+1) + 2;
 	VVI accsum(max_y, VI(max_x, 0));
 
 	REP (i, n) {
@@ -235,16 +238,11 @@ int main(int argc, char** argv) {
 		dump(p);
 		dump(cy);
 		dump(cx);
-		accsum[cy][cx]++;
+		accsum[cy+1][cx+1]++;
 	}
-	REP (i, max_y) {
-		int current = 0;
-		REP (j, max_x) {
-			if (accsum[i][j]) { current++; }
-			accsum[i][j] = current;
-			if (i > 0) {
-				accsum[i][j] += accsum[i-1][j];
-			}
+	REP (i, max_y-1) {
+		REP (j, max_x-1) {
+			accsum[i+1][j+1] += accsum[i+1][j] + accsum[i][j+1] - accsum[i][j];
 		}
 	}
 	dumpl(accsum);
@@ -255,17 +253,11 @@ int main(int argc, char** argv) {
 		y1 = compressed_index(xs, y1);
 		x2 = compressed_index(xs, x2);
 		y2 = compressed_index(xs, y2);
-		dump(x1);
-		dump(y1);
-		dump(x2);
-		dump(y2);
+		x2++;
+		y2++;
+		dump(MP(y1, x1));
+		dump(MP(y2, x2));
 		int ans = accsum[y2][x2] - accsum[y2][x1] - accsum[y1][x2] + accsum[y1][x1];
-		if (y2 == y1 && y2 > 0) {
-			ans += accsum[y2][x2] - accsum[y2-1][x2];
-		}
-		if (x2 == x1 && x2 > 0) {
-			ans += accsum[y2][x2] - accsum[y2][x2-1];
-		}
 		cout << ans << endl;
 	}
 
