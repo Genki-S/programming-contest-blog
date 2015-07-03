@@ -181,6 +181,11 @@ inline void output(string filename) {
 
 bool opt_debug = false;
 
+// xs: unique sorted vector of points
+int compressed_index(VI xs, int x) {
+	return lower_bound(ALL(xs), x) - xs.begin();
+}
+
 int main(int argc, char** argv) {
 	std::ios_base::sync_with_stdio(false);
 	// set options {{{
@@ -201,57 +206,67 @@ int main(int argc, char** argv) {
 	// output("./outputs/0.txt");
 
 	int n, m; cin >> n >> m;
-	vector< pair<PII, int> > sum;
+	vector<P> points;
+	VI ys, xs;
 	REP (i, n) {
 		int x, y; cin >> x >> y;
-		sum.PB(MP(MP(y, x), 1));
+		xs.PB(x);
+		ys.PB(y);
+		points.PB(P(y, x));
 	}
 
+	SORT(xs);
+	SORT(ys);
+#define UNIQ(v) ((v).erase(unique((v).begin(), (v).end()), (v).end()))
+	UNIQ(xs);
+	UNIQ(ys);
+
+	dump(ys);
+	dump(xs);
+
+	int max_y = compressed_index(ys, 1e9+1) + 1;
+	int max_x = compressed_index(xs, 1e9+1) + 1;
+	VVI accsum(max_y, VI(max_x, 0));
+
 	REP (i, n) {
-		REP (j, n) {
-			if (i == j) { continue; }
-			PII pi = sum[i].F, pj = sum[j].F;
-			if (pi.F >= pj.F && pi.S >= pj.S) {
-				sum[i].S++;
+		P p = points[i];
+		int cy = compressed_index(ys, p.Y);
+		int cx = compressed_index(xs, p.X);
+		dump(p);
+		dump(cy);
+		dump(cx);
+		accsum[cy][cx]++;
+	}
+	REP (i, max_y) {
+		int current = 0;
+		REP (j, max_x) {
+			if (accsum[i][j]) { current++; }
+			accsum[i][j] = current;
+			if (i > 0) {
+				accsum[i][j] += accsum[i-1][j];
 			}
 		}
 	}
-	dump(sum);
-
-	REP (i, n) {
-		REP (j, n) {
-			if (i == j) { continue; }
-			PII pi = sum[i].F, pj = sum[j].F;
-			PII tps[] = { MP(pi.F, pj.S), MP(pj.F, pi.S) };
-			REP (k, 2) {
-				PII tp = tps[k];
-				int s = 0;
-				if (tp.F >= pi.F && tp.S >= pi.S) {
-					s += sum[i].S;
-				}
-				if (tp.F >= pj.F && tp.S >= pj.S) {
-					s += sum[j].S;
-				}
-				if (s != 0) {
-					sum.PB(MP(tp, s));
-				}
-			}
-		}
-	}
-
-	map<PII, int> sum_map;
-	sum_map[MP(-1e9 - 1, -1e9 - 1)] = 0;
-	REP (i, sum.size()) {
-		sum_map[sum[i].F] = max(sum_map[sum[i].F], sum[i].S);
-	}
-	dumpl(sum_map);
+	dumpl(accsum);
 
 	REP (i, m) {
 		int x1, y1, x2, y2; cin >> x1 >> y1 >> x2 >> y2;
-		PII p1 = MP(y1, x1), p2 = MP(y2, x2);
-		map<PII, int>::iterator it1 = sum_map.lower_bound(p1);
-		map<PII, int>::iterator it2 = sum_map.lower_bound(p2);
-		cout << it2->second - it1->second << endl;
+		x1 = compressed_index(xs, x1);
+		y1 = compressed_index(xs, y1);
+		x2 = compressed_index(xs, x2);
+		y2 = compressed_index(xs, y2);
+		dump(x1);
+		dump(y1);
+		dump(x2);
+		dump(y2);
+		int ans = accsum[y2][x2] - accsum[y2][x1] - accsum[y1][x2] + accsum[y1][x1];
+		if (y2 == y1 && y2 > 0) {
+			ans += accsum[y2][x2] - accsum[y2-1][x2];
+		}
+		if (x2 == x1 && x2 > 0) {
+			ans += accsum[y2][x2] - accsum[y2][x2-1];
+		}
+		cout << ans << endl;
 	}
 
 	return 0;
