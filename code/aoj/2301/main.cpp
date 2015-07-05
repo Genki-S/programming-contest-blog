@@ -181,8 +181,12 @@ double solve(double r, double l, int k) {
 		double t = ((r + l) / 2.0);
 		return abs(T - t) < E + EPS;
 	}
+
 	if ((T < r && r - T > E + EPS) || (l < T && T - l > E + EPS)) {
 		return 0;
+	}
+	if (abs(T - r) < E + EPS && abs(T - l) < E + EPS) {
+		return 1;
 	}
 
 	double h = (r + l) / 2.0;
