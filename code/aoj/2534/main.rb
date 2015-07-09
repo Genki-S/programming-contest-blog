@@ -113,11 +113,14 @@ while true
         ok = false and break
       else
         bigger_chars[prev_word[j]] << word[j]
-        q = [word[j]]
-        while !q.empty?
-          c = q.pop
-          bigger_chars[prev_word[j]] << c
-          q += bigger_chars[c].to_a
+        # Update dependencies
+        ('a'..'z').each do |c|
+          q = bigger_chars[c].to_a
+          while !q.empty?
+            tc = q.pop
+            bigger_chars[c] << tc
+            q += (bigger_chars[tc] - bigger_chars[c]).to_a
+          end
         end
         break
       end
