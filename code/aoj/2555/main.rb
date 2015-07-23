@@ -90,71 +90,51 @@ end
 
 # }}}
 
-io.set_input('inputs/3.txt')
+# io.set_input('inputs/3.txt')
 
-class Datum
-  attr_reader :command, :skill, :cond, :thresh
-
-  def initialize(comm, s, c, t)
-    @command, @skill, @cond, @thresh = comm, s, c, t
-  end
-
-  def <=>(rhs)
-    if @cond == rhs.cond
-      if @thresh == rhs.thresh
-        0
-      else
-        @thresh < rhs.thresh ? -1 : 1
-      end
-    else
-      @cond == '>=' ? -1 : 1
-    end
-  end
-end
-
-data = []
+commands = []
 m, n = io.ints
-skills = Array.new(n, 0)
-done = Array.new(m, false)
 
-m.times do |i|
+m.times do
+  conditions = []
   k = io.int
-  all_smaller = true
   k.times do
-    s, c, t = io.strings
-    s = s.to_i - 1
-    t = t.to_i
-    all_smaller = false unless c == '<='
-    data << Datum.new(i, s, c, t)
+    skill, cond, thresh = io.strings
+    skill = skill.to_i - 1
+    thresh = thresh.to_i
+    conditions << [skill, cond, thresh]
   end
-  done[i] = true if all_smaller
+  commands << conditions
 end
-data.sort!
 
+skills = Array.new(n, 0)
 ok = true
-data.size.times do |i|
-  comm = data[i].command
-  break unless ok
-  next if done[comm]
-  done[comm] = true
-
-  data.delete_if { |v| v.thresh < data[i].thresh }
-
-  data.size.times do |j|
-    d = data[j]
-    next unless d.command == comm
-    if d.cond == '>='
-      if skills[d.skill] < d.thresh
-        skills[d.skill] = d.thresh
-      end
-    else
-      if skills[d.skill] > d.thresh
-        ok = false and break
+while ok
+  skills = Array.new(n, 1e9)
+  commands.each do |conditions|
+    conditions.each do |condition|
+      skill, cond, thresh = condition
+      if cond == '<=' && skills[skill] > thresh
+        skills[skill] = thresh
       end
     end
   end
+
+  ok = false
+  _s = commands.size
+  commands.delete_if do |conditions|
+    conditions.all? do |condition|
+      skill, cond, thresh = condition
+      (cond == '<=' && skills[skill] <= thresh) || (cond == '>=' && skills[skill] >= thresh)
+    end
+  end
+  ok = true if commands.size < _s
 end
 
-puts ok ? 'Yes' : 'No'
+if commands.size == 0
+  puts 'Yes'
+else
+  puts 'No'
+end
 
 # vim: foldmethod=marker
