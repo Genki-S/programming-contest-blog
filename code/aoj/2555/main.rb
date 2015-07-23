@@ -90,7 +90,7 @@ end
 
 # }}}
 
-io.set_input('inputs/4.txt')
+io.set_input('inputs/3.txt')
 
 class Datum
   attr_reader :command, :skill, :cond, :thresh
@@ -133,15 +133,16 @@ data.sort!
 
 ok = true
 data.size.times do |i|
-  p skills
   comm = data[i].command
   break unless ok
   next if done[comm]
   done[comm] = true
+
+  data.delete_if { |v| v.thresh < data[i].thresh }
+
   data.size.times do |j|
     d = data[j]
     next unless d.command == comm
-    p d
     if d.cond == '>='
       if skills[d.skill] < d.thresh
         skills[d.skill] = d.thresh
