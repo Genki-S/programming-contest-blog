@@ -91,7 +91,7 @@ end
 
 # }}}
 
-io.set_input('inputs/1')
+# io.set_input('inputs/3')
 
 n, m = io.ints
 field = Array.new(n)
@@ -126,124 +126,69 @@ def rotate(dydx, dir)
   rotate(dydx, dir-1)
 end
 
-class Heap
-  def initialize(&comparator)
-    @arr = []
-    @comparator = comparator || lambda { |lhs, rhs| lhs < rhs }
-  end
-
-  def push(v)
-    @arr << v
-    last_i = @arr.size - 1
-    @arr[0], @arr[last_i] = @arr[last_i], @arr[0]
-    make_heap!
-  end
-  alias_method :<<, :push
-
-  def pop
-    if @arr.size == 1
-      @arr.pop
-    else
-      ret = @arr.first
-      @arr[0] = @arr.pop
-      make_heap!
-      ret
-    end
-  end
-
-  def top
-    @arr.first
-  end
-
-  def empty?
-    @arr.empty?
-  end
-
-  private
-
-  def make_heap!
-    make_heap_at!(0)
-  end
-
-  def make_heap_at!(i)
-    return unless @arr[i]
-    l, r = left(i), right(i)
-    if @arr[l] && !@comparator.call(@arr[i], @arr[l])
-      @arr[i], @arr[l] = @arr[l], @arr[i]
-      make_heap_at!(l)
-    elsif @arr[r] && !@comparator.call(@arr[i], @arr[r])
-      @arr[i], @arr[r] = @arr[r], @arr[i]
-      make_heap_at!(r)
-    end
-  end
-
-  def parent(i)
-    (i - 1) / 2
-  end
-
-  def left(i)
-    i * 2 + 1
-  end
-
-  def right(i)
-    i * 2 + 2
-  end
-end
-
 dy = [-1, 0, 1, 0]
 dx = [0, 1, 0, -1]
 HAND_POSITIONS = [:front, :frontright, :right, :backright]
 dydx_by_hand = { front: [-1, 0], frontright: [-1, 1], right: [0, 1], backright: [1, 1], dist: 1 }
-dp = Array.new(n) { Array.new(m) { Array.new(4) { Hash.new(nil) } } }
-q = Heap.new { |rhs, lhs| rhs[:dist] <=> lhs[:dist] }
-q.push(state)
-while !q.empty?
-  state = q.pop
-  y, x, dir, hand, dist = state[:y], state[:x], state[:dir], state[:hand], state[:dist]
-  next if dp[y][x][dir][hand]
-  dp[y][x][dir][hand] = dist
-  puts state.to_s
+
+@field = field
+@memo = Array.new(n) { Array.new(m) { Array.new(4) { Hash.new(nil) } } }
+@visit_count = Array.new(n) { Array.new(m, 0) }
+@gy, @gx = gy, gx
+@dy, @dx = dy, dx
+@dydx_by_hand = dydx_by_hand
+def dfs(y, x, d, hand, cells)
+  # puts [y, x, d, hand, cells].to_s
+  if y == @gy && x == @gx
+    return cells + 1
+  end
+  return @memo[y][x][d][hand] if @memo[y][x][d][hand]
+
+  cells += 1 if @visit_count[y][x] == 0
+  @visit_count[y][x] += 1
+  ret = 1e10
 
   # Move front
-  if field[y + dy[dir]][x + dx[dir]] == '.' && [:frontright, :right].include?(hand)
-    q << { y: y + dy[dir], x: x + dx[dir], dir: dir, hand: hand == :frontright ? :right : :backright, dist: dist + 1}
+  if @field[y + @dy[d]][x + @dx[d]] == '.' && [:frontright, :right].include?(hand)
+    ret = [ret, dfs(y+@dy[d], x+@dx[d], d, hand == :frontright ? :right : :backright, cells)].min
   end
 
   # Turn right
   if [:right, :backright].include?(hand)
-    q << { y: y, x: x, dir: (dir + 1) % 4, hand: hand == :right ? :front : :frontright, dist: dist }
+    ret = [ret, dfs(y, x, (d+1)%4, hand == :right ? :front : :frontright, cells)].min
   end
 
   # Turn left
   if [:front, :frontright].include?(hand)
-    q << { y: y, x: x, dir: (dir + 4 - 1) % 4, hand: hand == :front ? :right : :backright, dist: dist }
+    ret = [ret, dfs(y, x, (d+4-1)%4, hand == :front ? :right : :backright, cells)].min
   end
 
   # Move hand
-  next_hand = HAND_POSITIONS[(HAND_POSITIONS.index(hand) + 1) % 4]
-  _dy, _dx = rotate(dydx_by_hand[next_hand], dir)
-  if hand == :backright
-    assert(next_hand == :front)
-    rdy, rdx = rotate(dydx_by_hand[:right], dir)
-    if field[y + rdy][x + rdx] == '#' && field[y + _dy][x + _dx] == '#'
-      q << { y: y, x: x, dir: dir, hand: next_hand, dist: dist }
-    end
-  else
-    if field[y + _dy][x + _dx] == '#'
-      q << { y: y, x: x, dir: dir, hand: next_hand, dist: dist }
+  HAND_POSITIONS.each do |next_hand|
+    next if hand == next_hand
+    _dy, _dx = rotate(@dydx_by_hand[next_hand], d)
+    if hand == :backright && next_hand != :right
+      rdy, rdx = rotate(@dydx_by_hand[:right], d)
+      if @field[y + rdy][x + rdx] == '#' && @field[y + _dy][x + _dx] == '#'
+        ret = [ret, dfs(y, x, d, next_hand, cells)].min
+      end
+    else
+      if @field[y + _dy][x + _dx] == '#'
+        ret = [ret, dfs(y, x, d, next_hand, cells)].min
+      end
     end
   end
+
+  @visit_count[y][x] -= 1
+  @memo[y][x][d][hand] = ret
+  ret
 end
 
-p gy, gx
-ans = nil
-dp[gy][gx].each do |t|
-  t.each do |k, v|
-    ans ||= v
-    ans = [ans, v].min
-  end
+ans = dfs(state[:y], state[:x], state[:dir], state[:hand], 0)
+if ans == 1e10
+  puts -1
+else
+  puts ans
 end
-
-puts ans ? ans : -1
 
 # vim: foldmethod=marker
