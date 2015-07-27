@@ -159,7 +159,7 @@ end
 
 # }}}
 
-# io.set_input('inputs/1')
+# io.set_input('inputs/0')
 
 class Snack
   attr_accessor :price, :satisfaction
@@ -175,27 +175,21 @@ n.times do
   snacks << Snack.new(a, b)
 end
 
-def solve(snacks, max_price)
-  return 0 if snacks.empty?
-  ret = 0
-  1e3.to_i.times do
-    n = (1..(snacks.size)).to_a.sample
-    took = snacks.sample(n)
-    price = took.map(&:price).reduce(&:+)
-    next if price > max_price
-    sat = took.map(&:satisfaction).reduce(&:+)
-    ret = [ret, sat].max
+snacks.sort_by!{ |s| s.price }.reverse!
+
+dp = Array.new(n+1) { Array.new(p+110, 0) }
+ans = 0
+(1..n).each do |i|
+  (0...p+110).each do |j|
+    pp = j - snacks[i-1].price
+    next if pp < 0
+    dp[i][j] = [dp[i-1][j], dp[i-1][pp] + snacks[i-1].satisfaction].max
+    if j - snacks[i-1].price <= p
+      ans = [ans, dp[i][j]].max
+    end
   end
-  ret
 end
 
-snacks.sort_by! { |s| s.price }
-ans = 0
-n.times do |i|
-  # Take this snack as minimum price
-  sat = snacks[i].satisfaction + solve(snacks[(i+1)..-1], p)
-  ans = [ans, sat].max
-end
 puts ans
 
 # vim: foldmethod=marker
